@@ -3,10 +3,15 @@ from flask_sqlalchemy import SQLAlchemy
 import os
 
 app = Flask(__name__)
-app.secret_key = "secret_key_for_session"
+app.secret_key = "any_secret_key"
 
-# ዳታቤዝ ማገናኛ (Render ላይ PostgreSQL ካለ እሱን ይጠቀማል)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'sqlite:///reports.db')
+# ዳታቤዝ ሊንኩን ማስተካከያ (Fix for Render)
+db_url = os.environ.get('DATABASE_URL')
+if db_url and db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///reports.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 # የሪፖርት ሰንጠረዥ
@@ -19,34 +24,12 @@ class Report(db.Model):
     activity = db.Column(db.Text)
     status = db.Column(db.String(50))
     remark = db.Column(db.Text)
-    approved = db.Column(db.Boolean, default=False)
-    rating = db.Column(db.Integer, default=0)
-
-# ለሙከራ ዩዘሮች (በኋላ በዳታቤዝ መቀየር ይቻላል)
-USERS = {
-    "tech1": {"password": "123", "role": "technician"},
-    "lead1": {"password": "123", "role": "supervisor"},
-    "boss1": {"password": "123", "role": "manager"}
-}
 
 @app.route('/')
-def login():
-    return render_template('login.html')
-
-@app.route('/auth', methods=['POST'])
-def auth():
-    user = request.form.get('username')
-    pwd = request.form.get('password')
-    if user in USERS and USERS[user]['password'] == pwd:
-        session['user'] = user
-        session['role'] = USERS[user]['role']
-        return redirect(url_for('dashboard'))
-    return "ያልተፈቀደ ተጠቃሚ!"
-
-@app.route('/dashboard')
-def dashboard():
+def home():
+    # ሁሉንም ሪፖርቶች ከዳታቤዝ አምጣ
     reports = Report.query.all()
-    return render_template('index.html', reports=reports, role=session.get('role'))
+    return render_template('index.html', reports=reports)
 
 @app.route('/add', methods=['POST'])
 def add_report():
@@ -54,30 +37,16 @@ def add_report():
         date=request.form.get('date'),
         model=request.form.get('model'),
         serial_no=request.form.get('serial_no'),
-        technician=session.get('user'),
+        technician=request.form.get('technician'),
         activity=request.form.get('activity'),
         status=request.form.get('status'),
         remark=request.form.get('remark')
     )
     db.session.add(new_rep)
     db.session.commit()
-    return redirect(url_for('dashboard'))
-
-@app.route('/approve/<int:id>')
-def approve(id):
-    rep = Report.query.get(id)
-    rep.approved = True
-    db.session.commit()
-    return redirect(url_for('dashboard'))
-
-@app.route('/rate/<int:id>', methods=['POST'])
-def rate(id):
-    rep = Report.query.get(id)
-    rep.rating = request.form.get('rating')
-    db.session.commit()
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('home'))
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
+        db.create_all() # ዳታቤዙን በራሱ ይፈጥራል
     app.run(debug=True)
