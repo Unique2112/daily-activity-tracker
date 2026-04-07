@@ -1,20 +1,20 @@
-from flask import Flask, render_template, request, redirect, url_for, session
-from flask_sqlalchemy import SQLAlchemy
 import os
+from flask import Flask, render_template, request, redirect, url_for
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-app.secret_key = "any_secret_key"
+app.secret_key = "mgk_secret_key"
 
-# ዳታቤዝ ሊንኩን ማስተካከያ (Fix for Render)
+# Render ላይ ዳታቤዙን እንዲያገኝ
 db_url = os.environ.get('DATABASE_URL')
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///reports.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///tech_report.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# የሪፖርት ሰንጠረዥ
+# ዳታቤዝ ሰንጠረዥ
 class Report(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.String(50))
@@ -26,14 +26,13 @@ class Report(db.Model):
     remark = db.Column(db.Text)
 
 @app.route('/')
-def home():
-    # ሁሉንም ሪፖርቶች ከዳታቤዝ አምጣ
-    reports = Report.query.all()
+def index():
+    reports = Report.query.order_by(Report.id.desc()).all()
     return render_template('index.html', reports=reports)
 
 @app.route('/add', methods=['POST'])
-def add_report():
-    new_rep = Report(
+def add():
+    new_report = Report(
         date=request.form.get('date'),
         model=request.form.get('model'),
         serial_no=request.form.get('serial_no'),
@@ -42,11 +41,11 @@ def add_report():
         status=request.form.get('status'),
         remark=request.form.get('remark')
     )
-    db.session.add(new_rep)
+    db.session.add(new_report)
     db.session.commit()
-    return redirect(url_for('home'))
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all() # ዳታቤዙን በራሱ ይፈጥራል
+        db.create_all() # ይሄ መስመር ዳታቤዙን Render ላይ ይፈጥረዋል
     app.run(debug=True)
