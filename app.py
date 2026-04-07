@@ -3,18 +3,17 @@ from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
-app.secret_key = "mgk_secret_key"
+app.secret_key = "mgk_key_123"
 
-# Render ላይ ዳታቤዙን እንዲያገኝ
+# ዳታቤዝ ግንኙነት
 db_url = os.environ.get('DATABASE_URL')
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///tech_report.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = db_url or 'sqlite:///local.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
-# ዳታቤዝ ሰንጠረዥ
 class Report(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     date = db.Column(db.String(50))
@@ -26,26 +25,32 @@ class Report(db.Model):
     remark = db.Column(db.Text)
 
 @app.route('/')
-def index():
-    reports = Report.query.order_by(Report.id.desc()).all()
+def home():
+    try:
+        reports = Report.query.order_by(Report.id.desc()).all()
+    except:
+        reports = [] # ዳታቤዙ ገና ካልተፈጠረ ባዶ ዝርዝር ያሳያል
     return render_template('index.html', reports=reports)
 
 @app.route('/add', methods=['POST'])
 def add():
-    new_report = Report(
-        date=request.form.get('date'),
-        model=request.form.get('model'),
-        serial_no=request.form.get('serial_no'),
-        technician=request.form.get('technician'),
-        activity=request.form.get('activity'),
-        status=request.form.get('status'),
-        remark=request.form.get('remark')
-    )
-    db.session.add(new_report)
-    db.session.commit()
-    return redirect(url_for('index'))
+    try:
+        new_report = Report(
+            date=request.form.get('date'),
+            model=request.form.get('model'),
+            serial_no=request.form.get('serial_no'),
+            technician=request.form.get('technician'),
+            activity=request.form.get('activity'),
+            status=request.form.get('status'),
+            remark=request.form.get('remark')
+        )
+        db.session.add(new_report)
+        db.session.commit()
+    except Exception as e:
+        print(f"Error: {e}")
+    return redirect(url_for('home'))
 
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all() # ይሄ መስመር ዳታቤዙን Render ላይ ይፈጥረዋል
+        db.create_all()
     app.run(debug=True)
