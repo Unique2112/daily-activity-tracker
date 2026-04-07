@@ -3,37 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Activity Reporting Form</title>
+    <title>Technical Daily Activity Form</title>
     <style>
-        body { font-family: sans-serif; background-color: #f0f2f5; padding: 15px; margin: 0; }
-        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-        h2 { color: #1a73e8; text-align: center; font-size: 20px; }
-        label { display: block; margin-top: 10px; font-weight: bold; color: #555; }
-        input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background-color: #1a73e8; color: white; border: none; border-radius: 5px; margin-top: 20px; font-size: 16px; cursor: pointer; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; padding: 15px; margin: 0; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #1a73e8; text-align: center; font-size: 22px; margin-bottom: 20px; border-bottom: 2px solid #1a73e8; padding-bottom: 10px; }
+        label { display: block; margin-top: 15px; font-weight: bold; color: #333; font-size: 14px; }
+        input, select, textarea { width: 100%; padding: 12px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; }
+        input:focus, textarea:focus { border-color: #1a73e8; outline: none; box-shadow: 0 0 5px rgba(26,115,232,0.2); }
+        button { width: 100%; padding: 14px; background-color: #1a73e8; color: white; border: none; border-radius: 6px; margin-top: 25px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
         button:hover { background-color: #1557b0; }
-        hr { margin: 30px 0; border: 0; border-top: 1px solid #eee; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background: #f8f9fa; }
+        
+        hr { margin: 40px 0; border: 0; border-top: 2px solid #eee; }
+        h3 { color: #333; font-size: 18px; }
+        
+        .table-wrapper { overflow-x: auto; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; background: white; min-width: 600px; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; font-size: 13px; }
+        th { background: #1a73e8; color: white; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e8f0fe; color: #1a73e8; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>የሥራ መመዝገቢያ ፎርም</h2>
+    <h2>የሥራ መመዝገቢያ ፎርም (Daily Activity)</h2>
+    
     <form action="/add" method="POST">
         <label>ቀን (Date)</label>
         <input type="date" name="date" required>
 
         <label>የማሽን ሞዴል (Machine Model)</label>
-        <input type="text" name="model" placeholder="ለምሳሌ: Disc plough" required>
+        <input type="text" name="model" placeholder="ለምሳሌ: Agri-way Disc plough" required>
 
-        <label>ባለሙያ (Technician)</label>
+        <label>የማሽን ሲሪያል ቁጥር (Machine Serial No)</label>
+        <input type="text" name="serial_no" placeholder="Serial Number ያስገቡ">
+
+        <label>ባለሙያ (Assigned Technician)</label>
         <input type="text" name="technician" placeholder="የባለሙያ ስም" required>
 
         <label>የተከናወነ ተግባር (Activity)</label>
-        <textarea name="activity" rows="3" placeholder="ምን ተሰራ?"></textarea>
+        <textarea name="activity" rows="3" placeholder="ምን ሥራ ተከናወነ?" required></textarea>
 
         <label>ሁኔታ (Status)</label>
         <select name="status">
@@ -43,31 +54,38 @@
             <option value="Arranged">Arranged (ተስተካክሏል)</option>
         </select>
 
+        <label>ተጨማሪ አስተያየት (Remark)</label>
+        <textarea name="remark" rows="2" placeholder="ማንኛውም ተጨማሪ መረጃ ካለ..."></textarea>
+
         <button type="submit">መረጃውን ላክ (Submit)</button>
     </form>
 
     <hr>
 
-    <h3>የተመዘገቡ ሥራዎች (History)</h3>
-    <div style="overflow-x:auto;">
+    <h3>የተመዘገቡ የሥራ ሪፖርቶች</h3>
+    <div class="table-wrapper">
         <table>
             <thead>
                 <tr>
                     <th>Date</th>
-                    <th>Model</th>
+                    <th>Machine Model</th>
+                    <th>Serial No</th>
                     <th>Technician</th>
                     <th>Activity</th>
                     <th>Status</th>
+                    <th>Remark</th>
                 </tr>
             </thead>
             <tbody>
-                {% for act in activities %}
+                {% for act in reports %}
                 <tr>
                     <td>{{ act.date }}</td>
                     <td>{{ act.model }}</td>
+                    <td>{{ act.serial_no }}</td>
                     <td>{{ act.technician }}</td>
                     <td>{{ act.activity }}</td>
-                    <td>{{ act.status }}</td>
+                    <td><span class="status-badge">{{ act.status }}</span></td>
+                    <td>{{ act.remark }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
